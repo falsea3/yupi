@@ -1,14 +1,17 @@
 package app
 
 import (
-	"context"
-	"github.com/gofiber/fiber/v2"
+	"kinopoisk-api/database/postgres"
 	"kinopoisk-api/internal/config"
+	"kinopoisk-api/internal/repository"
+	"kinopoisk-api/internal/service"
 )
 
 type diContainer struct {
-	config *config.Config
-	app    *fiber.App
+	config         *config.Config
+	storage        *postgres.Storage
+	filmRepository FilmRepository
+	filmService    FilmService
 }
 
 func newDIContainer() *diContainer {
@@ -22,10 +25,37 @@ func (d *diContainer) Config() *config.Config {
 	return d.config
 }
 
-func (d *diContainer) App(_ context.Context) (*fiber.App, error) {
-	if d.app == nil {
-		d.app = fiber.New()
+func (d *diContainer) Storage() (*postgres.Storage, error) {
+	if d.storage == nil {
+		var err error
+		d.storage, err = postgres.NewStorage(d.Config().DB.URL)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return d.storage, nil
+}
+
+func (d *diContainer) FilmService() (FilmService, error) {
+	if d.filmService == nil {
+		repo, err := d.FilmRepository()
+		if err != nil {
+			return nil, err
+		}
+		d.filmService = service.NewFilmService(repo, d.Config())
 	}
 
-	return d.app, nil
+	return d.filmService, nil
+}
+
+func (d *diContainer) FilmRepository() (FilmRepository, error) {
+	if d.filmRepository == nil {
+		storage, err := d.Storage()
+		if err != nil {
+			return nil, err
+		}
+		d.filmRepository = repository.NewFilmRepository(storage)
+	}
+	return d.filmRepository, nil
+
 }
