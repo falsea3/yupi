@@ -8,9 +8,8 @@ COPY go.mod go.sum ./
 # Загружаем зависимости
 RUN go mod download
 
-# Копируем исходный код
-COPY cmd ./cmd
-COPY internal ./internal
+# Копируем весь проект
+COPY . .
 
 # Собираем приложение
 RUN go build -o main cmd/kinopoisk-api/main.go
@@ -28,4 +27,3 @@ EXPOSE 8080
 
 # Запускаем приложение
 CMD ["./main"]
-
